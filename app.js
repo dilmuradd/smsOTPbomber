@@ -4,7 +4,7 @@ const fs = require('fs');
 
 // ⬇️ Versiyani tekshiradigan funksiya
 const LOCAL_VERSION = '1.0.0'; // Mahalliy versiya
-const REMOTE_VERSION_URL = 'https://raw.githubusercontent.com/<your-username>/<your-repo>/main/version.txt'; // GitHub dagi version.txt manzili
+const REMOTE_VERSION_URL = 'https://raw.githubusercontent.com/dilmuradd/smsOTPbomber/master/version.txt'; // GitHub dagi version.txt manzili
 
 async function checkVersion() {
   try {
